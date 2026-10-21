@@ -32,7 +32,26 @@ vim.api.nvim_create_autocmd("LspAttach", {
     keymap.set("n", "<leader>rn", vim.lsp.buf.rename, vim.tbl_extend("force", opts, { desc = "Rename symbol" }))
     keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, vim.tbl_extend("force", opts, { desc = "Code action" }))
     keymap.set("n", "<leader>e", vim.diagnostic.open_float, vim.tbl_extend("force", opts, { desc = "Show diagnostic" }))
-    keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end, vim.tbl_extend("force", opts, { desc = "Next diagnostic" }))
-    keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, vim.tbl_extend("force", opts, { desc = "Previous diagnostic" }))
+    keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end,
+      vim.tbl_extend("force", opts, { desc = "Next diagnostic" }))
+    keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end,
+      vim.tbl_extend("force", opts, { desc = "Previous diagnostic" }))
   end,
 })
+
+-- toggle pyright between "basic" and "strict" type-checking on the fly
+vim.keymap.set("n", "<leader>lt", function()
+  local clients = vim.lsp.get_clients({ name = "pyright" })
+  if #clients == 0 then
+    vim.notify("pyright isn't attached to this buffer", vim.log.levels.WARN)
+    return
+  end
+  for _, client in ipairs(clients) do
+    local settings = client.config.settings
+    local current = settings.python.analysis.typeCheckingMode
+    local new_mode = current == "strict" and "basic" or "strict"
+    settings.python.analysis.typeCheckingMode = new_mode
+    client.notify("workspace/didChangeConfiguration", { settings = settings })
+    vim.notify("pyright typeCheckingMode -> " .. new_mode)
+  end
+end, { desc = "Toggle pyright basic/strict" })
